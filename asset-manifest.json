@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/tunescout/static/css/main.6cc1ac8b.css",
-    "main.js": "/tunescout/static/js/main.8f3edd9b.js",
+    "main.css": "/tunescout/static/css/main.e8dbfa7c.css",
+    "main.js": "/tunescout/static/js/main.2e9100e7.js",
     "static/js/453.ac23217c.chunk.js": "/tunescout/static/js/453.ac23217c.chunk.js",
     "index.html": "/tunescout/index.html",
-    "main.6cc1ac8b.css.map": "/tunescout/static/css/main.6cc1ac8b.css.map",
-    "main.8f3edd9b.js.map": "/tunescout/static/js/main.8f3edd9b.js.map",
+    "main.e8dbfa7c.css.map": "/tunescout/static/css/main.e8dbfa7c.css.map",
+    "main.2e9100e7.js.map": "/tunescout/static/js/main.2e9100e7.js.map",
     "453.ac23217c.chunk.js.map": "/tunescout/static/js/453.ac23217c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.6cc1ac8b.css",
-    "static/js/main.8f3edd9b.js"
+    "static/css/main.e8dbfa7c.css",
+    "static/js/main.2e9100e7.js"
   ]
 }
