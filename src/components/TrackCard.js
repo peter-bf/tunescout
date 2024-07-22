@@ -22,9 +22,9 @@ const TrackCard = ({ track, index, onClick }) => {
           {index !== undefined ? <span className="mr-1">{index + 1}.</span> : null}
           {track.name}
         </h3>
-        <p className="text-sm text-red-600 truncate">{track.artist}</p>
+        <p className="text-m text-red-600 truncate mt-3">{track.artist}</p>
         {index !== undefined ? (
-          <p className="text-sm text-black-500">Streams: {formatNumber(track.playcount)}</p>
+          <p className="text-m text-black-500">Streams: {formatNumber(track.playcount)}</p>
         ) : null}
       </div>
     </div>

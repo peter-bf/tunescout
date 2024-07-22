@@ -34,8 +34,8 @@ const ArtistCard = ({ artist, index, onClick }) => {
         </h3>
         {index !== undefined ? (
           <>
-            <p className="text-xs text-red-600 truncate">Genres: {artist.genres.join(', ')}</p>
-            <p className="text-xs text-black-500">Followers: {formatNumber(artist.followers)}</p>
+            <p className="text-m text-red-600 truncate mt-3">Genres: {artist.genres.join(', ')}</p>
+            <p className="text-m text-black-500">Followers: {formatNumber(artist.followers)}</p>
           </>
         ) : null}
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-function Hero({ onLinkClick }) {
+function Hero({ onLinkClick, isPopupOpen }) {
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastMousePosition, setLastMousePosition] = useState({ x: 0, y: 0 });
@@ -102,10 +102,13 @@ function Hero({ onLinkClick }) {
           <p className="text-xl mb-6">TuneScout scouts the internet for you and helps you find new music.</p>
           <a
             href="#trending"
-            className="discover-music-btn bg-primary text-white px-8 py-3 rounded-full hover:bg-red-500 transition duration-300"
+            className={`discover-music-btn bg-primary text-white px-8 py-3 rounded-full transition duration-300 ${isPopupOpen ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-500'}`}
             onClick={(e) => {
-              e.preventDefault();
-              onLinkClick('Trending');
+              if (isPopupOpen) {
+                e.preventDefault();
+              } else {
+                onLinkClick('Trending');
+              }
             }}
           >
             Discover Music

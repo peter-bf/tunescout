@@ -11,6 +11,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-query": "^3.39.3",
+    "react-router-dom": "^6.25.1",
     "react-scripts": "5.0.1",
     "react-toastify": "^10.0.5",
     "web-vitals": "^2.1.4"
@@ -22,7 +23,7 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy-normal": "gh-pages -d build -b gh-pages",
-    "deploy-snapshot": "gh-pages -d build -b gh-pages -m 'Deploy SNAPSHOT' --dest snapshot"
+    "deploy-snapshot": "REACT_APP_BASENAME='/snapshot' gh-pages -d snapshot-build -b gh-pages --dest snapshot"
   },
   "eslintConfig": {
     "extends": [
