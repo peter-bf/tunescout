@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-function Hero() {
+function Hero({ onLinkClick }) {
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastMousePosition, setLastMousePosition] = useState({ x: 0, y: 0 });
@@ -9,15 +9,15 @@ function Hero() {
   const animationRef = useRef(null);
   const scratchSoundRef = useRef(null);
 
-  const SCRATCH_COOLDOWN = 1500; // Cooldown in milliseconds
-  const SCRATCH_THRESHOLD = 70; // Minimum rotation delta to trigger scratch
+  const SCRATCH_COOLDOWN = 1500; 
+  const SCRATCH_THRESHOLD = 70; 
 
   useEffect(() => {
-    scratchSoundRef.current = new Audio('/sounds/scratch.mp3'); // Replace with your actual sound file path
-    scratchSoundRef.current.load(); // Preload the audio
+    scratchSoundRef.current = new Audio(`${process.env.PUBLIC_URL}/sounds/scratch.mp3`); 
+    scratchSoundRef.current.load(); 
 
     let lastTime = 0;
-    const autoRotateSpeed = 0.05; // Adjust this value to change the auto-rotation speed
+    const autoRotateSpeed = 0.05;
 
     const animate = (time) => {
       if (lastTime !== 0) {
@@ -43,7 +43,7 @@ function Hero() {
     const currentTime = Date.now();
     if (currentTime - lastScratchTime > SCRATCH_COOLDOWN) {
       if (scratchSoundRef.current) {
-        scratchSoundRef.current.currentTime = 0; // Reset to start
+        scratchSoundRef.current.currentTime = 0;
         scratchSoundRef.current.play().catch(e => console.log("Audio play failed:", e));
       }
       setLastScratchTime(currentTime);
@@ -96,15 +96,22 @@ function Hero() {
 
   return (
     <div className="bg-white relative overflow-hidden">
-      <div className="container mx-auto px-4 py-16 flex flex-col md:flex-row items-center">
+      <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row items-center">
         <div className="md:w-1/2 mb-8 md:mb-0 z-10">
-          <h1 className="text-4xl font-bold mb-4">Discover Your Next Favorite Song</h1>
-          <p className="text-xl mb-6">TuneScout helps you find new music based on your preferences and listening history.</p>
-          <button className="bg-primary text-white px-6 py-2 rounded-full bg-primary transition duration-300">
-            Get Started
-          </button>
+          <h1 className="text-4xl font-bold mb-4">Discover Your Next Favorite Song 🎵</h1>
+          <p className="text-xl mb-6">TuneScout scouts the internet for you and helps you find new music.</p>
+          <a
+            href="#trending"
+            className="discover-music-btn bg-primary text-white px-8 py-3 rounded-full hover:bg-red-500 transition duration-300"
+            onClick={(e) => {
+              e.preventDefault();
+              onLinkClick('Trending');
+            }}
+          >
+            Discover Music
+          </a>
         </div>
-        <div className="md:w-1/2 relative h-96">
+        <div className="md:w-1/2 relative h-64">
           <div 
             ref={discRef}
             className="absolute -right-1/2 top-1/2 transform -translate-y-1/2"
@@ -115,7 +122,7 @@ function Hero() {
             }}
           >
             <img
-              src="/images/disc.png"
+              src={`${process.env.PUBLIC_URL}/images/disc.png`}
               alt="Rotating Vinyl Disc"
               className="h-full w-auto select-none pointer-events-none"
               style={{ height: '120%' }}

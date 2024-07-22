@@ -1,0 +1,34 @@
+import React from 'react';
+
+const TrackCard = ({ track, index, onClick }) => {
+  const formatNumber = (num) => {
+    if (num === undefined || num === null) {
+      return 'N/A';
+    }
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  return (
+    <div
+      key={track.id}
+      className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transition-all duration-150 ease-in-out transform hover:-translate-y-1 hover:shadow-lg hover:shadow-glow hover:bg-gray-100"
+      onClick={() => onClick(track)}
+    >
+      {track.image && (
+        <img src={track.image} alt={track.name} className="w-full h-auto object-contain" loading="lazy" />
+      )}
+      <div className="p-2">
+        <h3 className="font-bold text-sm truncate">
+          {index !== undefined ? <span className="mr-1">{index + 1}.</span> : null}
+          {track.name}
+        </h3>
+        <p className="text-sm text-red-600 truncate">{track.artist}</p>
+        {index !== undefined ? (
+          <p className="text-sm text-black-500">Streams: {formatNumber(track.playcount)}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+export default TrackCard;
