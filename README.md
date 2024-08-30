@@ -4,5 +4,3 @@
 Check the [SNAPSHOT](https://github.com/peter-bf/tunescout/tree/SNAPSHOT) branch for the previous screenshot of the website.
 
 ### Website URL: https://peter-bf.github.io/tunescout/
-
-test
