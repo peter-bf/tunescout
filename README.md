@@ -1,3 +1,5 @@
+University of Ottawa SEG 3125 project
+
 # tunescout
 
 ## Check the [gh-pages](https://github.com/peter-bf/tunescout/tree/gh-pages) branch for ACTIVE commits / deployments.
