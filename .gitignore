@@ -1,9 +1,3 @@
-node_modules/
-build/
-snapshot-build/
-coverage/
-dist/
-
 # Environment configuration
 .env
 .env.local
