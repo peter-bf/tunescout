@@ -25,8 +25,8 @@ const PopupMenu = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
-      const focusableElements = popupRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      if (focusableElements.length) {
+      const focusableElements = popupRef.current?.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (focusableElements && focusableElements.length) {
         focusableElements[0].focus();
       }
     } else {
@@ -42,7 +42,7 @@ const PopupMenu = ({ isOpen, onClose }) => {
       <div
         ref={popupRef}
         className="bg-white p-6 rounded-lg shadow-lg w-1/2"
-        tabIndex="0" // Make the popup focusable
+        tabIndex={0}
       >
         <h2 className="text-2xl font-semibold mb-4">Welcome to TuneScout!</h2>
         <p className="mb-1">- TuneScout uses real Last.fm and Spotify information (API implementation) 📈</p>
@@ -52,7 +52,7 @@ const PopupMenu = ({ isOpen, onClose }) => {
         <button
           onClick={onClose}
           className="bg-primary text-white px-6 py-2 rounded-full hover:bg-red-500 transition duration-300"
-          tabIndex="0" // Make the button focusable
+          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter') onClose();
           }}
@@ -66,30 +66,31 @@ const PopupMenu = ({ isOpen, onClose }) => {
 
 function App() {
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [currentSection, setCurrentSection] = useState('Home');
   const [isPopupOpen, setIsPopupOpen] = useState(true);
+  const lastScrollYRef = useRef(0);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
     const controlNavbar = () => {
-      if (typeof window !== 'undefined') {
-        if (window.scrollY > lastScrollY + 30) {
-          setIsNavbarVisible(false);
-        } else if (window.scrollY < lastScrollY) {
-          setIsNavbarVisible(true);
-        }
-        setLastScrollY(window.scrollY);
+      const currentScroll = window.scrollY;
+      if (currentScroll > lastScrollYRef.current + 30) {
+        setIsNavbarVisible(false);
+      } else if (currentScroll < lastScrollYRef.current - 10) {
+        setIsNavbarVisible(true);
       }
+      lastScrollYRef.current = currentScroll;
     };
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('scroll', controlNavbar);
+    window.addEventListener('scroll', controlNavbar, { passive: true });
 
-      return () => {
-        window.removeEventListener('scroll', controlNavbar);
-      };
-    }
-  }, [lastScrollY]);
+    return () => {
+      window.removeEventListener('scroll', controlNavbar);
+    };
+  }, []);
 
   const handleLinkClick = (section) => {
     setCurrentSection(section);
@@ -103,7 +104,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router basename={process.env.REACT_APP_BASENAME || ''}>
         <div className="min-h-screen flex flex-col bg-background text-text">
-          <Navbar isVisible={isNavbarVisible} onLinkClick={handleLinkClick} />
+          <Navbar
+            isVisible={isNavbarVisible}
+            onLinkClick={handleLinkClick}
+            currentSection={currentSection}
+          />
           <main className="flex-grow">
             {currentSection === 'Home' && (
               <section id="home">

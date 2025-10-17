@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from 'react-query';
-import { getLastFmTopArtists } from './API';
+import { getLastFmTopArtists } from '../services/lastfm';
 import ArtistCard from './ArtistCard';
 import ArtistModal from './ArtistModal';
 
@@ -16,7 +16,9 @@ const Artists = () => {
   const { data: artists, error, isLoading } = useQuery('topArtists', getLastFmTopArtists);
 
   const handleArtistClick = useCallback((artist, event) => {
-    lastFocusedElement.current = event.currentTarget;
+    if (event?.currentTarget) {
+      lastFocusedElement.current = event.currentTarget;
+    }
     setSelectedArtist(artist);
     setIsModalVisible(true);
   }, []);
@@ -51,7 +53,7 @@ const Artists = () => {
 
   useEffect(() => {
     if (artists) {
-      const sortedArtists = [...artists].sort((a, b) => b.popularity - a.popularity);
+      const sortedArtists = [...artists].sort((a, b) => b.playcount - a.playcount);
       const indexOfLastArtist = currentPage * artistsPerPage;
       const indexOfFirstArtist = indexOfLastArtist - artistsPerPage;
       setCurrentArtists(sortedArtists.slice(indexOfFirstArtist, indexOfLastArtist));
@@ -83,12 +85,12 @@ const Artists = () => {
         <div className="flex justify-center">
           <div className="grid grid-cols-5 gap-6" role="list" aria-labelledby="top-artists-heading">
             {currentArtists.map((artist, index) => (
-              <ArtistCard 
-                key={artist.id} 
-                artist={artist} 
-                index={(currentPage - 1) * artistsPerPage + index} 
-                onClick={(event) => handleArtistClick(artist, event)} 
-                tabIndex="0" // Make the artist card focusable
+              <ArtistCard
+                key={artist.id}
+                artist={artist}
+                index={(currentPage - 1) * artistsPerPage + index}
+                onClick={handleArtistClick}
+                tabIndex="0"
                 role="listitem"
               />
             ))}

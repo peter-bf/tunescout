@@ -1,38 +1,29 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { getSpotifyToken } from './API';
+import { searchSpotify } from '../services/spotify';
 
 const Discover = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
-      setError('ERROR: Please make sure to input some text into the searchox!');
+      setError('Please enter a song or album title to search.');
       return;
     }
     setLoading(true);
     setError(null);
 
     try {
-      const token = await getSpotifyToken();
-      const response = await axios.get('https://api.spotify.com/v1/search', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        params: {
-          q: searchQuery,
-          type: 'track,album',
-          limit: 10
-        }
-      });
-
-      setSearchResults(response.data);
+      const results = await searchSpotify(searchQuery);
+      setSearchResults(results);
     } catch (err) {
-      setError('Failed to fetch search results');
+      const message = err?.message?.includes('Spotify credentials')
+        ? 'Spotify credentials are missing. Please configure environment variables before searching.'
+        : 'Failed to fetch search results. Please try again later.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -59,7 +50,7 @@ const Discover = () => {
       {loading && <p className="mt-4">Loading...</p>}
       {error && <p className="mt-4 text-red-500">{error}</p>}
       <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {searchResults.tracks?.items?.map((track) => (
+        {searchResults?.tracks?.items?.map((track) => (
           <div key={track.id} className="w-full">
             <iframe
               src={`https://open.spotify.com/embed/track/${track.id}`}
@@ -73,7 +64,7 @@ const Discover = () => {
             ></iframe>
           </div>
         ))}
-        {searchResults.albums?.items?.map((album) => (
+        {searchResults?.albums?.items?.map((album) => (
           <div key={album.id} className="w-full">
             <iframe
               src={`https://open.spotify.com/embed/album/${album.id}`}

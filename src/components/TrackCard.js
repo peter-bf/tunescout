@@ -1,13 +1,7 @@
 import React from 'react';
+import { formatNumber } from '../utils/format';
 
 const TrackCard = ({ track, index, onClick }) => {
-  const formatNumber = (num) => {
-    if (num === undefined || num === null) {
-      return 'N/A';
-    }
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  };
-
   return (
     <div
       key={track.id}

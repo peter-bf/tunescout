@@ -1,8 +1,7 @@
 import React from 'react';
+import { formatNumber } from '../utils/format';
 
 const TrackTable = ({ tracks, onClick }) => {
-  const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden h-full flex flex-col">
       <table className="w-full">

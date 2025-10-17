@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from 'react-query';
-import { getLastFmTopTracks, getLastFmTrackDetails, getLastFmArtistDetails, getLastFmTrackTags } from './API';
+import { getLastFmTopTracks } from '../services/lastfm';
 import TrackCard from './TrackCard';
 import TrackTable from './TrackTable';
 import TrackModal from './TrackModal';
@@ -10,25 +10,10 @@ const Trending = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const modalRef = useRef(null);
 
-  const { data: tracks, error, isLoading } = useQuery('topTracks', async () => {
-    const lastFmTracks = await getLastFmTopTracks();
-    return Promise.all(
-      lastFmTracks.map(async (lastFmTrack) => {
-        const trackDetails = await getLastFmTrackDetails(lastFmTrack.id);
-        const tags = await getLastFmTrackTags(lastFmTrack.artist, lastFmTrack.name);
-        return { ...lastFmTrack, trackDetails, tags };
-      })
-    );
-  });
+  const { data: tracks, error, isLoading } = useQuery('topTracks', getLastFmTopTracks);
 
-  const handleTrackClick = useCallback(async (track) => {
+  const handleTrackClick = useCallback((track) => {
     setSelectedTrack(track);
-    try {
-      const artistDetails = await getLastFmArtistDetails(track.artist);
-      setSelectedTrack((prev) => ({ ...prev, artistDetails }));
-    } catch (err) {
-      console.error('Failed to fetch artist details', err);
-    }
     setIsModalVisible(true);
   }, []);
 
@@ -59,8 +44,8 @@ const Trending = () => {
 
   if (error) return <p className="text-red-500 text-center mt-4">Failed to fetch top songs</p>;
   if (isLoading) return <p className="text-center mt-4">Loading...</p>;
+  if (!tracks || !tracks.length) return <p className="text-center mt-4">No trending tracks available right now.</p>;
 
-  // Sort tracks by playcount
   const sortedTracks = [...tracks].sort((a, b) => b.playcount - a.playcount);
 
   const topSixTracks = sortedTracks.slice(0, 6);

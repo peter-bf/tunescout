@@ -1,38 +1,99 @@
 import React, { useEffect, useState } from 'react';
-import { getSpotifyTrackDetails, getSpotifyArtistDetails } from './API';
+import { getSpotifyTrackDetails, getSpotifyArtistDetails } from '../services/spotify';
+import {
+  getLastFmTrackDetails,
+  getLastFmTrackTags,
+  getLastFmArtistDetails,
+} from '../services/lastfm';
+import { formatNumber, formatDuration, capitalize } from '../utils/format';
 
 const TrackModal = ({ track, isVisible, onClose, modalRef }) => {
-  const [spotifyDetails, setSpotifyDetails] = useState(null);
+  const [spotifyTrack, setSpotifyTrack] = useState(null);
+  const [spotifyArtist, setSpotifyArtist] = useState(null);
   const [artistDetails, setArtistDetails] = useState(null);
+  const [trackDetails, setTrackDetails] = useState(null);
+  const [tags, setTags] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [error, setError] = useState('');
-
-  const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+  const releaseDate = spotifyTrack?.album?.release_date ?? null;
+  const durationMs = spotifyTrack?.duration_ms ?? (trackDetails?.duration ? Number(trackDetails.duration) * 1000 : null);
+  const listenerCount = trackDetails?.listeners ? Number(trackDetails.listeners) : null;
+  const hasStats = Boolean(releaseDate || durationMs || (tags && tags.length) || listenerCount);
 
   useEffect(() => {
-    const fetchSpotifyDetails = async () => {
-      if (!track.trackDetails?.album?.release_date || !track.trackDetails?.genres) {
-        const details = await getSpotifyTrackDetails(track.name, track.artist);
-        setSpotifyDetails(details);
-      }
-      if (!track.artistDetails) {
-        const artist = await getSpotifyArtistDetails(track.artist);
-        setArtistDetails(artist);
+    if (!isVisible || !track) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchDetails = async () => {
+      setLoading(true);
+      try {
+        const [lfmTrack, lfmTags] = await Promise.all([
+          getLastFmTrackDetails({
+            mbid: track.mbid,
+            name: track.name,
+            artist: track.artist,
+          }).catch((lfmError) => {
+            console.error('Failed to load Last.fm track details', lfmError);
+            return null;
+          }),
+          getLastFmTrackTags({
+            mbid: track.mbid,
+            name: track.name,
+            artist: track.artist,
+          }),
+        ]);
+
+        const [spotifyTrackData, spotifyArtistData, lfmArtist] = await Promise.all([
+          getSpotifyTrackDetails(track.name, track.artist).catch((spotifyError) => {
+            console.warn('Spotify track details unavailable', spotifyError);
+            return null;
+          }),
+          getSpotifyArtistDetails(track.artist).catch((spotifyError) => {
+            console.warn('Spotify artist details unavailable', spotifyError);
+            return null;
+          }),
+          getLastFmArtistDetails({
+            mbid: track.artistMbid,
+            name: track.artist,
+          }).catch((artistError) => {
+            console.error('Failed to load Last.fm artist details', artistError);
+            return null;
+          }),
+        ]);
+
+        if (isCancelled) {
+          return;
+        }
+
+        setTrackDetails(lfmTrack);
+        setTags(lfmTags);
+        setSpotifyTrack(spotifyTrackData);
+        setSpotifyArtist(spotifyArtistData);
+        setArtistDetails(lfmArtist);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
-    fetchSpotifyDetails();
-  }, [track]);
 
-  const getReleaseDate = () => {
-    return track.trackDetails?.album?.release_date || spotifyDetails?.album?.release_date || 'N/A';
-  };
+    fetchDetails();
 
-  const getGenres = () => {
-    const genres = track.trackDetails?.genres || spotifyDetails?.album?.genres || [];
-    return genres.map(capitalize).join(', ') || 'N/A';
-  };
+    return () => {
+      isCancelled = true;
+    };
+  }, [track, isVisible]);
+
+  useEffect(() => {
+    setComments([]);
+    setNewComment('');
+    setError('');
+  }, [track?.id]);
 
   const handleCommentSubmit = (e) => {
     e.preventDefault();
@@ -66,61 +127,77 @@ const TrackModal = ({ track, isVisible, onClose, modalRef }) => {
           <div className="w-full md:w-1/2 pr-0 md:pr-6 mb-6 md:mb-0">
             <h2 className="text-3xl font-bold mb-4">{track.name}</h2>
             <p className="text-xl mb-2"><strong>Artist:</strong> {track.artist}</p>
-            {track.trackDetails?.album?.name && track.trackDetails?.album?.name !== track.name && (
-              <p className="text-xl mb-2"><strong>Album:</strong> {track.trackDetails.album.name}</p>
+            {trackDetails?.album?.title && trackDetails.album.title !== track.name ? (
+              <p className="text-xl mb-2"><strong>Album:</strong> {trackDetails.album.title}</p>
+            ) : null}
+            <p className="text-xl mb-6">
+              <strong>Streams:</strong> {formatNumber(track.playcount)}
+            </p>
+            {spotifyTrack ? (
+              <iframe
+                src={`https://open.spotify.com/embed/track/${spotifyTrack.id}`}
+                width="100%"
+                height="152"
+                frameBorder="0"
+                allow="encrypted-media"
+                className="mb-6 rounded"
+                title="Track Player"
+              ></iframe>
+            ) : (
+              <p className="mb-6 text-gray-500">Spotify preview unavailable for this track.</p>
             )}
-            <p className="text-xl mb-6"><strong>Streams:</strong> {formatNumber(track.playcount)}</p>
-            <iframe
-              src={`https://open.spotify.com/embed/track/${spotifyDetails?.id || track.id}`}
-              width="100%"
-              height="152"
-              frameBorder="0"
-              allowtransparency="true"
-              allow="encrypted-media"
-              className="mb-6 rounded"
-              title="Track Player"
-            ></iframe>
             <div className="mb-4">
               <h3 className="text-2xl font-semibold mb-2">Additional Stats</h3>
-              <ul className="list-disc pl-5 text-lg">
-                {track.trackDetails?.album?.release_date || spotifyDetails?.album?.release_date ? (
-                  <li><strong>Release Date:</strong> {getReleaseDate()}</li>
-                ) : null}
-                {track.trackDetails?.duration_ms || spotifyDetails?.duration_ms ? (
-                  <li>
-                    <strong>Duration:</strong>{' '}
-                    {`${Math.floor((track.trackDetails?.duration_ms || spotifyDetails.duration_ms) / 60000)}:${Math.floor(((track.trackDetails?.duration_ms || spotifyDetails.duration_ms) % 60000) / 1000)
-                      .toString()
-                      .padStart(2, '0')}`}
-                  </li>
-                ) : null}
-                {track.artistDetails?.genres?.length > 0 || spotifyDetails?.album?.genres?.length > 0 ? (
-                  <li>
-                    <strong>Genre:</strong> {getGenres()}
-                  </li>
-                ) : null}
-                {track.trackDetails?.popularity && (
-                  <li><strong>Popularity:</strong> {track.trackDetails.popularity}/100</li>
-                )}
-              </ul>
+              {hasStats ? (
+                <ul className="list-disc pl-5 text-lg">
+                  {releaseDate ? (
+                    <li><strong>Release Date:</strong> {releaseDate}</li>
+                  ) : null}
+                  {durationMs ? (
+                    <li>
+                      <strong>Duration:</strong> {formatDuration(durationMs)}
+                    </li>
+                  ) : null}
+                  {tags.length ? (
+                    <li>
+                      <strong>Tags:</strong> {tags.map(capitalize).join(', ')}
+                    </li>
+                  ) : null}
+                  {listenerCount ? (
+                    <li><strong>Listeners:</strong> {formatNumber(listenerCount)}</li>
+                  ) : null}
+                </ul>
+              ) : (
+                !loading && <p className="text-gray-500">We could not find additional stats for this track.</p>
+              )}
             </div>
           </div>
           <div className="w-full md:w-1/2 pl-0 md:pl-6 flex flex-col">
             <div className="mb-6">
-              <img src={artistDetails?.images?.[0]?.url || ''} alt={track.artist} className="w-40 h-40 rounded-full mx-auto" loading="lazy" />
+              <img
+                src={
+                  spotifyArtist?.images?.[0]?.url ||
+                  artistDetails?.image?.find((img) => img.size === 'mega')?.url ||
+                  artistDetails?.image?.[0]?.url ||
+                  ''
+                }
+                alt={track.artist}
+                className="w-40 h-40 rounded-full mx-auto object-cover"
+                loading="lazy"
+              />
             </div>
-            {track.trackDetails?.album && track.trackDetails.album.id && (
+            {spotifyTrack?.album?.id ? (
               <iframe
-                src={`https://open.spotify.com/embed/album/${track.trackDetails.album.id}`}
+                src={`https://open.spotify.com/embed/album/${spotifyTrack.album.id}`}
                 width="100%"
                 height="380"
                 frameBorder="0"
-                allowtransparency="true"
                 allow="encrypted-media"
                 className="rounded flex-grow"
                 title="Album Player"
               ></iframe>
-            )}
+            ) : null}
+            {loading ? <p className="mt-4 text-center text-gray-500">Loading details...</p> : null}
           </div>
         </div>
         

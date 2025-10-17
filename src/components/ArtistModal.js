@@ -1,8 +1,53 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
+import { getLastFmArtistDetails } from '../services/lastfm';
+import { getSpotifyArtistDetails } from '../services/spotify';
+import { formatNumber, capitalize } from '../utils/format';
 
 const ArtistModal = ({ artist, isVisible, onClose, modalRef }) => {
-  const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+  const [artistInfo, setArtistInfo] = useState(null);
+  const [spotifyArtist, setSpotifyArtist] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible || !artist) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchArtistDetails = async () => {
+      setLoading(true);
+      try {
+        const [lastFmDetails, spotifyDetails] = await Promise.all([
+          getLastFmArtistDetails({ mbid: artist.mbid, name: artist.name }).catch((error) => {
+            console.error('Failed to fetch Last.fm artist details', error);
+            return null;
+          }),
+          getSpotifyArtistDetails(artist.name).catch((error) => {
+            console.warn('Spotify artist data unavailable', error);
+            return null;
+          }),
+        ]);
+
+        if (isCancelled) {
+          return;
+        }
+
+        setArtistInfo(lastFmDetails);
+        setSpotifyArtist(spotifyDetails);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchArtistDetails();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [artist, isVisible]);
 
   const handleKeyDown = useCallback(
     (event) => {
@@ -14,6 +59,10 @@ const ArtistModal = ({ artist, isVisible, onClose, modalRef }) => {
   );
 
   const trapFocus = useCallback((event) => {
+    if (!modalRef?.current) {
+      return;
+    }
+
     const focusableElements = modalRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
@@ -32,9 +81,11 @@ const ArtistModal = ({ artist, isVisible, onClose, modalRef }) => {
       document.addEventListener('keydown', handleKeyDown);
       document.addEventListener('keydown', trapFocus);
 
-      const focusableElements = modalRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      if (focusableElements.length) {
-        focusableElements[0].focus();
+      if (modalRef?.current) {
+        const focusableElements = modalRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length) {
+          focusableElements[0].focus();
+        }
       }
     } else {
       document.removeEventListener('keydown', handleKeyDown);
@@ -67,13 +118,46 @@ const ArtistModal = ({ artist, isVisible, onClose, modalRef }) => {
         <div className="flex">
           <div className="w-1/2 pr-6">
             <h2 className="text-3xl font-bold mb-4">{artist.name}</h2>
-            <p className="text-xl mb-2"><strong>Followers:</strong> {formatNumber(artist.followers)}</p>
-            <p className="text-xl mb-2"><strong>Genres:</strong> {artist.genres.map(capitalize).join(', ')}</p>
-            <p className="text-xl mb-6"><strong>Popularity Score:</strong> {formatNumber(artist.popularity)}/100</p>
+            <p className="text-xl mb-2">
+              <strong>Followers:</strong>{' '}
+              {formatNumber(spotifyArtist?.followers?.total ?? artistInfo?.stats?.listeners ?? artist.listeners)}
+            </p>
+            <p className="text-xl mb-2">
+              <strong>Genres:</strong>{' '}
+              {(spotifyArtist?.genres?.length
+                ? spotifyArtist.genres.map(capitalize).join(', ')
+                : artistInfo?.tags?.length
+                  ? artistInfo.tags.map(capitalize).join(', ')
+                  : 'N/A')}
+            </p>
+            <p className="text-xl mb-2">
+              <strong>Popularity:</strong>{' '}
+              {spotifyArtist?.popularity ? `${spotifyArtist.popularity}/100` : 'N/A'}
+            </p>
+            <p className="text-xl mb-6">
+              <strong>Playcount:</strong>{' '}
+              {formatNumber(artistInfo?.stats?.playcount ?? artist.playcount)}
+            </p>
+            {artistInfo?.bio?.summary ? (
+              <p className="text-base text-gray-700">
+                {artistInfo.bio.summary.replace(/<[^>]+>/g, '').slice(0, 300)}{artistInfo.bio.summary.length > 300 ? '…' : ''}
+              </p>
+            ) : null}
+            {loading ? <p className="mt-4 text-gray-500">Loading details…</p> : null}
           </div>
           <div className="w-1/2 pl-6 flex flex-col">
             <div className="mb-6">
-              <img src={artist.images[0].url} alt={artist.name} className="w-40 h-40 rounded-full mx-auto" loading="lazy" />
+              <img
+                src={
+                  spotifyArtist?.images?.[0]?.url ||
+                  artistInfo?.image?.find((img) => img.size === 'mega')?.url ||
+                  artist.image ||
+                  ''
+                }
+                alt={artist.name}
+                className="w-40 h-40 rounded-full mx-auto object-cover"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
